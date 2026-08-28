@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BulkyApp — Naikkan Berat Badan dengan AI</title>
+    <script>
+      // Terapkan tema tersimpan SEBELUM React mount, supaya tidak ada
+      // kedipan (flash) dari terang ke gelap saat halaman di-refresh.
+      // Logika ini sengaja duplikat sederhana dari ThemeContext.jsx
+      // (harus inline & tanpa dependency supaya bisa jalan paling awal).
+      (function () {
+        try {
+          var stored = localStorage.getItem("bulkyapp_theme");
+          var isDark =
+            stored === "dark" ||
+            (stored !== "light" &&
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (isDark) document.documentElement.classList.add("dark");
+        } catch (e) {
+          /* localStorage tidak tersedia — abaikan, default ke light */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

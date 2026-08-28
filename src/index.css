@@ -1,0 +1,84 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode (default) — nilai RGB persis sama dengan hex lama:
+       cream #FBF6ED, cream-soft #F5EEDF, cream-card #FFFDF8,
+       ink #2A2B22, ink-soft #585A4B, ink-faint #8B8D7C */
+    --color-cream: 251 246 237;
+    --color-cream-soft: 245 238 223;
+    --color-cream-card: 255 253 248;
+    --color-ink: 42 43 34;
+    --color-ink-soft: 88 90 75;
+    --color-ink-faint: 139 141 124;
+  }
+
+  /* Dark mode — dipicu lewat class `.dark` di <html>, diatur oleh ThemeContext */
+  .dark {
+    --color-cream: 26 28 22;
+    --color-cream-soft: 34 37 29;
+    --color-cream-card: 41 44 36;
+    --color-ink: 237 238 231;
+    --color-ink-soft: 196 199 183;
+    --color-ink-faint: 143 146 132;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-cream text-ink font-body antialiased;
+    /* Transisi soft saat mode gelap/terang berganti — berlaku global */
+    transition: background-color 0.35s ease, color 0.35s ease;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display text-ink;
+  }
+
+  /* Keep focus states visible for keyboard users */
+  :focus-visible {
+    @apply outline-none ring-2 ring-sage-500 ring-offset-2 ring-offset-cream;
+  }
+}
+
+@layer components {
+  /* Standard elevated card used across the app */
+  .card {
+    @apply bg-cream-card rounded-3xl shadow-card border border-ink/5;
+    transition: background-color 0.35s ease, border-color 0.35s ease;
+  }
+
+  /* Primary CTA — warm amber, used for the one dominant action per screen */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-400
+      px-6 py-3.5 font-display font-semibold text-white shadow-glow
+      transition-all duration-200 hover:bg-amber-500 hover:-translate-y-0.5
+      active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  /* Secondary action — quiet sage outline */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-sage-200
+      bg-transparent px-6 py-3.5 font-display font-semibold text-sage-700
+      transition-all duration-200 hover:bg-sage-50 hover:border-sage-300;
+  }
+
+  .input-field {
+    @apply w-full rounded-2xl border border-ink/10 bg-cream-card px-4 py-3.5
+      font-body text-ink placeholder:text-ink-faint
+      transition-colors focus:border-sage-400 outline-none;
+  }
+
+  .label-text {
+    @apply mb-2 block font-display text-sm font-semibold text-ink-soft;
+  }
+}
