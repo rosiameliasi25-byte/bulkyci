@@ -1,0 +1,19 @@
+{
+  "name": "bulky-app-push-server",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Backend kecil untuk alarm pengingat makan BulkyApp — menyimpan jadwal + push subscription, lalu mengirim Web Push di jam yang tepat walau aplikasi/browser klien tertutup.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "generate-vapid": "node generate-vapid.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-cron": "^4.6.0",
+    "web-push": "^3.6.7"
+  }
+}

@@ -1,0 +1,154 @@
+{
+  "c4c6c879-3374-4f75-8b2e-96ac642a49ab": {
+    "09df1207-6f69-4556-a724-5134a50cb8d0": {
+      "resendCount": 10,
+      "lastSentAt": "2026-08-28T09:48:00.009Z"
+    }
+  },
+  "40d3107d-8e7a-4a61-9b92-feb650f1faf0": {
+    "9cdf089f-0305-45e4-9f3d-683c985608f8": {
+      "ackedAt": "2026-08-28T09:32:21.404Z",
+      "resendCount": 0
+    },
+    "1806aa42-810f-4f30-8cc0-8b87a1274429": {
+      "ackedAt": "2026-08-28T09:32:19.519Z",
+      "resendCount": 0
+    },
+    "bbb81a82-b661-431a-ba13-52b03eef15f4": {
+      "ackedAt": "2026-08-28T09:32:43.777Z",
+      "resendCount": 0
+    },
+    "b296b47a-a2f6-4780-bb2c-60fdc3d301c5": {
+      "ackedAt": "2026-08-28T09:32:26.379Z",
+      "resendCount": 0
+    },
+    "5619fdd9-65ca-446d-82fc-1648bc19ad7c": {
+      "ackedAt": "2026-08-28T09:32:23.567Z",
+      "resendCount": 0
+    },
+    "eef39f43-984a-4cfe-a449-f58c8bede113": {
+      "ackedAt": "2026-08-28T09:32:30.411Z",
+      "resendCount": 0
+    },
+    "effce5bc-0c5c-4807-b7c6-f9dac308c0c8": {
+      "ackedAt": "2026-08-28T09:32:28.737Z",
+      "resendCount": 0
+    },
+    "f76bc7b0-cb3b-4245-883e-cf4d96bd5b99": {
+      "ackedAt": "2026-08-28T09:32:31.933Z",
+      "resendCount": 0
+    },
+    "6ed98e90-201d-43ed-8549-18fc7a5eb8a3": {
+      "ackedAt": "2026-08-28T09:32:35.780Z",
+      "resendCount": 0
+    },
+    "65c3ac41-0148-4ca9-819e-307605a61b0e": {
+      "ackedAt": "2026-08-28T09:32:34.366Z",
+      "resendCount": 0
+    },
+    "392138cb-23f1-48ad-821e-75add2594780": {
+      "ackedAt": "2026-08-28T09:33:09.335Z",
+      "resendCount": 0
+    },
+    "ee9ce403-61e5-4d06-9838-d00c49a6df61": {
+      "resendCount": 1,
+      "lastSentAt": "2026-08-28T09:32:01.527Z"
+    },
+    "7ddfcc89-a776-4a65-b9ee-108543770dc5": {
+      "ackedAt": "2026-08-28T09:32:36.587Z",
+      "resendCount": 0
+    },
+    "87c9c6e9-5a33-41e8-8e26-d19c50ed9a7b": {
+      "ackedAt": "2026-08-28T10:08:19.603Z",
+      "resendCount": 0
+    },
+    "67ca411a-b57c-4e04-b367-bcc6a90dfaf9": {
+      "ackedAt": "2026-08-28T10:08:32.607Z",
+      "resendCount": 0
+    },
+    "32042336-323c-40e1-84df-f9ede9f81e57": {
+      "ackedAt": "2026-08-28T10:19:05.823Z",
+      "resendCount": 0
+    },
+    "8e1bf4df-97ec-4631-99ac-c05dfb113a79": {
+      "ackedAt": "2026-08-28T10:19:12.002Z",
+      "resendCount": 0
+    },
+    "d5e63914-cbc0-4609-863b-1cae7a302c3a": {
+      "ackedAt": "2026-08-28T14:34:26.863Z",
+      "resendCount": 0
+    },
+    "f7e75583-e648-4001-bf26-c76ad48b23ce": {
+      "ackedAt": "2026-08-28T14:34:07.937Z",
+      "resendCount": 0
+    },
+    "cbd10514-fca6-4413-8047-0edc592fa039": {
+      "ackedAt": "2026-08-28T14:34:10.257Z",
+      "resendCount": 0
+    },
+    "aade2ef1-71d1-4298-aeb8-3a25d571c7df": {
+      "ackedAt": "2026-08-28T14:34:15.297Z",
+      "resendCount": 0
+    },
+    "9bf04718-236c-4573-935a-2787603deb81": {
+      "ackedAt": "2026-08-28T14:34:13.005Z",
+      "resendCount": 0
+    },
+    "0a9b7160-1b58-4830-afa8-828626aaa84e": {
+      "ackedAt": "2026-08-28T14:34:25.208Z",
+      "resendCount": 0
+    },
+    "564732b2-02cd-40b4-b168-dd9d27707622": {
+      "ackedAt": "2026-08-28T14:34:17.351Z",
+      "resendCount": 0
+    },
+    "6c954104-7370-4c08-9ea8-895ab7967a6f": {
+      "ackedAt": "2026-08-28T14:38:04.023Z",
+      "resendCount": 0
+    },
+    "d5b2ac47-029d-46e2-8b84-d7be33847ed3": {
+      "ackedAt": "2026-08-28T14:35:12.256Z",
+      "resendCount": 0
+    },
+    "96c7bf6b-bb21-403f-a828-e35e03062c67": {
+      "ackedAt": "2026-08-28T14:35:13.945Z",
+      "resendCount": 0
+    },
+    "eb933be5-ec7c-45b6-b6f3-c254094ed213": {
+      "ackedAt": "2026-08-28T14:35:10.609Z",
+      "resendCount": 0
+    },
+    "9d599d0f-a72d-4bf7-9970-67cdeb76d682": {
+      "ackedAt": "2026-08-28T14:35:18.491Z",
+      "resendCount": 0
+    },
+    "7841305e-536e-4c17-a512-4c00d711fb14": {
+      "ackedAt": "2026-08-28T14:35:15.736Z",
+      "resendCount": 0
+    },
+    "28d998f2-0024-4d4d-abaa-01a440615fad": {
+      "ackedAt": "2026-08-28T14:51:06.913Z",
+      "resendCount": 0
+    },
+    "420242d2-6e05-42a5-bd66-855c64cfd851": {
+      "ackedAt": "2026-08-28T14:51:08.287Z",
+      "resendCount": 0
+    },
+    "d85e276e-23f8-4534-8b0f-7c2c17c50629": {
+      "ackedAt": "2026-08-28T14:51:05.345Z",
+      "resendCount": 0
+    },
+    "b706a283-a518-4c7a-a10a-f07ff0710828": {
+      "ackedAt": "2026-08-28T15:06:05.994Z",
+      "resendCount": 0
+    },
+    "435abe5c-9bf0-4d46-ac13-d71de082e028": {
+      "ackedAt": "2026-08-28T15:06:04.538Z",
+      "resendCount": 0
+    },
+    "e79f0155-7ed1-4d28-9289-3ef12c7af9bb": {
+      "ackedAt": "2026-08-28T15:06:07.804Z",
+      "resendCount": 0
+    }
+  }
+}
