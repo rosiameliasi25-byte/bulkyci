@@ -3,7 +3,7 @@
 // subscription-nya ke backend (server/) supaya backend bisa mengirim
 // alarm walau tab ini sedang tertutup.
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8787";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://bulkyci-production.up.railway.app";
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
 
 export function isPushSupported() {
