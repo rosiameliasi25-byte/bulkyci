@@ -30,7 +30,7 @@ self.addEventListener("push", (event) => {
     body: payload.body || "",
     icon: "/favicon.svg",
     badge: "/favicon.svg",
-    tag: payload.reminderId ? `reminder-${payload.reminderId}` : undefined,
+    tag: payload.reminderId ? `reminder-${payload.reminderId}` : `bulkyapp-${payload.type || "notif"}`,
     renotify: true,
     requireInteraction: true, // notifikasi tetap ada sampai diklik, bukan hilang sendiri
     vibrate: [300, 150, 300, 150, 300], // pola getar mirip alarm (Android)
