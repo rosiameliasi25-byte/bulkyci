@@ -1,113 +1,163 @@
-// Penyimpanan super sederhana berbasis file JSON, supaya scaffold ini bisa
-// langsung dijalankan tanpa perlu setup database dulu.
+// Penyimpanan berbasis PostgreSQL (Railway).
 //
-// PENTING UNTUK PRODUCTION: ganti modul ini dengan database sungguhan
-// (Postgres/SQLite/Mongo/dst) sebelum dipakai banyak pengguna nyata —
-// file JSON tidak aman untuk concurrent write dalam skala besar dan akan
-// hilang kalau server-nya stateless (mis. serverless / container ephemeral).
-// Struktur fungsi di bawah ini sengaja dibuat generic (get/set per user)
-// supaya gampang diganti ke DB tanpa mengubah server.js.
+// Struktur fungsi ini SENGAJA dibuat identik (nama & bentuk data) dengan
+// versi db.js lama yang berbasis file JSON, supaya server.js tidak perlu
+// diubah banyak — cuma perlu tambah `await` di titik yang memanggil fungsi
+// dari modul ini (karena sekarang semua fungsi jadi async).
 
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import pg from "pg";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, "data");
-const SUBS_FILE = path.join(DATA_DIR, "subscriptions.json");
-const REMINDERS_FILE = path.join(DATA_DIR, "reminders.json");
-const ACKS_FILE = path.join(DATA_DIR, "acks.json");
+const { Pool } = pg;
 
-function ensureFile(file, fallback) {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify(fallback, null, 2));
-}
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes("railway")
+    ? { rejectUnauthorized: false }
+    : undefined,
+});
 
-function readJson(file, fallback) {
-  ensureFile(file, fallback);
-  try {
-    return JSON.parse(fs.readFileSync(file, "utf-8"));
-  } catch {
-    return fallback;
-  }
-}
+// Dipanggil sekali saat server start (lihat server.js) untuk memastikan
+// tabel-tabel yang dibutuhkan sudah ada.
+export async function initDb() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      user_id TEXT NOT NULL,
+      endpoint TEXT NOT NULL,
+      subscription JSONB NOT NULL,
+      PRIMARY KEY (user_id, endpoint)
+    );
+  `);
 
-function writeJson(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS reminders (
+      user_id TEXT PRIMARY KEY,
+      reminders_by_date JSONB NOT NULL DEFAULT '{}'::jsonb
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS acks (
+      user_id TEXT NOT NULL,
+      reminder_id TEXT NOT NULL,
+      acked_at TIMESTAMPTZ,
+      resend_count INTEGER NOT NULL DEFAULT 0,
+      last_sent_at TIMESTAMPTZ,
+      PRIMARY KEY (user_id, reminder_id)
+    );
+  `);
+
+  console.log("[db] Tabel Postgres siap (subscriptions, reminders, acks).");
 }
 
 // ---------- Push subscriptions ----------
-// Shape: { [userId]: [ { endpoint, keys: {p256dh, auth} }, ... ] }
-export function getSubscriptions(userId) {
-  const all = readJson(SUBS_FILE, {});
-  return all[userId] || [];
+
+export async function getSubscriptions(userId) {
+  const { rows } = await pool.query(
+    "SELECT subscription FROM subscriptions WHERE user_id = $1",
+    [userId]
+  );
+  return rows.map((r) => r.subscription);
 }
 
-export function addSubscription(userId, subscription) {
-  const all = readJson(SUBS_FILE, {});
-  const list = all[userId] || [];
-  const exists = list.some((s) => s.endpoint === subscription.endpoint);
-  if (!exists) list.push(subscription);
-  all[userId] = list;
-  writeJson(SUBS_FILE, all);
+export async function addSubscription(userId, subscription) {
+  await pool.query(
+    `INSERT INTO subscriptions (user_id, endpoint, subscription)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (user_id, endpoint) DO UPDATE SET subscription = EXCLUDED.subscription`,
+    [userId, subscription.endpoint, subscription]
+  );
 }
 
-export function removeSubscription(userId, endpoint) {
-  const all = readJson(SUBS_FILE, {});
-  const list = (all[userId] || []).filter((s) => s.endpoint !== endpoint);
-  all[userId] = list;
-  writeJson(SUBS_FILE, all);
+export async function removeSubscription(userId, endpoint) {
+  await pool.query(
+    "DELETE FROM subscriptions WHERE user_id = $1 AND endpoint = $2",
+    [userId, endpoint]
+  );
 }
 
-export function getAllUserIds() {
-  const all = readJson(SUBS_FILE, {});
-  return Object.keys(all);
+export async function getAllUserIds() {
+  const { rows } = await pool.query("SELECT DISTINCT user_id FROM subscriptions");
+  return rows.map((r) => r.user_id);
 }
 
-// ---------- Reminders (synced dari client, sumber kebenaran tetap di client, ----------
-// ---------- server cuma butuh cukup info untuk tahu kapan harus mengirim push) --------
-// Shape: { [userId]: { "2026-08-28": [ {id, mealType, time, label, done, soundId} ] } }
-export function setReminders(userId, remindersByDate) {
-  const all = readJson(REMINDERS_FILE, {});
-  all[userId] = remindersByDate;
-  writeJson(REMINDERS_FILE, all);
+// ---------- Reminders ----------
+// Sama seperti versi lama: setReminders MENGGANTI SELURUH remindersByDate
+// milik user tsb (client selalu kirim state lengkap saat sync).
+
+export async function setReminders(userId, remindersByDate) {
+  await pool.query(
+    `INSERT INTO reminders (user_id, reminders_by_date)
+     VALUES ($1, $2)
+     ON CONFLICT (user_id) DO UPDATE SET reminders_by_date = EXCLUDED.reminders_by_date`,
+    [userId, remindersByDate]
+  );
 }
 
-export function getReminders(userId) {
-  const all = readJson(REMINDERS_FILE, {});
-  return all[userId] || {};
+export async function getReminders(userId) {
+  const { rows } = await pool.query(
+    "SELECT reminders_by_date FROM reminders WHERE user_id = $1",
+    [userId]
+  );
+  return rows[0]?.reminders_by_date || {};
 }
 
-export function getAllReminders() {
-  return readJson(REMINDERS_FILE, {});
+// Dipakai oleh cron (tickReminders) untuk mengecek SEMUA user sekaligus.
+// Shape hasil sama seperti versi lama: { [userId]: { [dateKey]: [...] } }
+export async function getAllReminders() {
+  const { rows } = await pool.query("SELECT user_id, reminders_by_date FROM reminders");
+  const result = {};
+  for (const row of rows) {
+    result[row.user_id] = row.reminders_by_date;
+  }
+  return result;
 }
 
-// ---------- Acks (dipakai supaya cron tidak spam ulang notifikasi yang sudah dilihat) ----------
-// Shape: { [userId]: { [reminderId]: { ackedAt, resendCount } } }
-export function getAcks(userId) {
-  const all = readJson(ACKS_FILE, {});
-  return all[userId] || {};
+// ---------- Acks ----------
+
+export async function getAcks(userId) {
+  const { rows } = await pool.query("SELECT * FROM acks WHERE user_id = $1", [userId]);
+  const result = {};
+  for (const row of rows) {
+    result[row.reminder_id] = {
+      ackedAt: row.acked_at,
+      resendCount: row.resend_count,
+      lastSentAt: row.last_sent_at,
+    };
+  }
+  return result;
 }
 
-export function markAck(userId, reminderId) {
-  const all = readJson(ACKS_FILE, {});
-  all[userId] = all[userId] || {};
-  all[userId][reminderId] = { ackedAt: new Date().toISOString(), resendCount: 0 };
-  writeJson(ACKS_FILE, all);
+export async function markAck(userId, reminderId) {
+  await pool.query(
+    `INSERT INTO acks (user_id, reminder_id, acked_at, resend_count)
+     VALUES ($1, $2, NOW(), 0)
+     ON CONFLICT (user_id, reminder_id)
+     DO UPDATE SET acked_at = NOW(), resend_count = 0`,
+    [userId, reminderId]
+  );
 }
 
-export function bumpResendCount(userId, reminderId) {
-  const all = readJson(ACKS_FILE, {});
-  all[userId] = all[userId] || {};
-  const entry = all[userId][reminderId] || { resendCount: 0 };
-  entry.resendCount = (entry.resendCount || 0) + 1;
-  entry.lastSentAt = new Date().toISOString();
-  all[userId][reminderId] = entry;
-  writeJson(ACKS_FILE, all);
-  return entry.resendCount;
+export async function bumpResendCount(userId, reminderId) {
+  const { rows } = await pool.query(
+    `INSERT INTO acks (user_id, reminder_id, resend_count, last_sent_at)
+     VALUES ($1, $2, 1, NOW())
+     ON CONFLICT (user_id, reminder_id)
+     DO UPDATE SET resend_count = acks.resend_count + 1, last_sent_at = NOW()
+     RETURNING resend_count`,
+    [userId, reminderId]
+  );
+  return rows[0].resend_count;
 }
 
-export function getAckEntry(userId, reminderId) {
-  const all = readJson(ACKS_FILE, {});
-  return (all[userId] || {})[reminderId] || null;
+export async function getAckEntry(userId, reminderId) {
+  const { rows } = await pool.query(
+    "SELECT * FROM acks WHERE user_id = $1 AND reminder_id = $2",
+    [userId, reminderId]
+  );
+  if (!rows[0]) return null;
+  return {
+    ackedAt: rows[0].acked_at,
+    resendCount: rows[0].resend_count,
+    lastSentAt: rows[0].last_sent_at,
+  };
 }
