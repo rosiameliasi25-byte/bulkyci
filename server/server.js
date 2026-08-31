@@ -19,8 +19,9 @@
 //   menekan "Selesai" — mirip alarm HP yang terus bunyi sampai dimatikan.
 // - iOS Safari mendukung Web Push HANYA jika PWA sudah di-"Add to Home
 //   Screen" (iOS 16.4+). Tanpa itu, push tidak akan sampai di iPhone.
-// - Ganti penyimpanan JSON di db.js dengan database asli sebelum dipakai
-//   banyak pengguna sungguhan.
+// - Penyimpanan sekarang pakai PostgreSQL (lihat db.js) — data reminder,
+//   subscription, dan ack SEKARANG PERSISTEN, tidak lagi hilang setiap
+//   kali server di-redeploy/restart.
 
 import "dotenv/config";
 import express from "express";
@@ -28,6 +29,7 @@ import cors from "cors";
 import cron from "node-cron";
 import webpush from "web-push";
 import {
+  initDb,
   addSubscription,
   removeSubscription,
   getSubscriptions,
@@ -82,19 +84,19 @@ app.get("/api/push/vapid-public-key", (_req, res) => {
 
 // Simpan push subscription baru untuk seorang user (dipanggil sekali saat
 // user mengaktifkan alarm / mengizinkan notifikasi di Settings).
-app.post("/api/push/subscribe", (req, res) => {
+app.post("/api/push/subscribe", async (req, res) => {
   const { userId, subscription } = req.body || {};
   if (!userId || !subscription?.endpoint) {
     return res.status(400).json({ error: "userId dan subscription wajib diisi" });
   }
-  addSubscription(userId, subscription);
+  await addSubscription(userId, subscription);
   res.json({ ok: true });
 });
 
-app.post("/api/push/unsubscribe", (req, res) => {
+app.post("/api/push/unsubscribe", async (req, res) => {
   const { userId, endpoint } = req.body || {};
   if (!userId || !endpoint) return res.status(400).json({ error: "userId dan endpoint wajib diisi" });
-  removeSubscription(userId, endpoint);
+  await removeSubscription(userId, endpoint);
   res.json({ ok: true });
 });
 
@@ -102,7 +104,7 @@ app.post("/api/push/unsubscribe", (req, res) => {
 app.post("/api/push/test", async (req, res) => {
   const { userId, soundId } = req.body || {};
   if (!userId) return res.status(400).json({ error: "userId wajib diisi" });
-  const subs = getSubscriptions(userId);
+  const subs = await getSubscriptions(userId);
   if (subs.length === 0) {
     return res.status(404).json({ error: "Belum ada subscription aktif untuk user ini" });
   }
@@ -118,32 +120,32 @@ app.post("/api/push/test", async (req, res) => {
 // Client mengirim seluruh jadwal reminder-nya ke sini setiap kali ada
 // perubahan (tambah/hapus/edit). Server jadi tahu jadwal mana yang perlu
 // dipicu via cron, tanpa perlu client sedang online saat jam-nya tiba.
-app.post("/api/reminders/sync", (req, res) => {
+app.post("/api/reminders/sync", async (req, res) => {
   const { userId, remindersByDate } = req.body || {};
   if (!userId || typeof remindersByDate !== "object") {
     return res.status(400).json({ error: "userId dan remindersByDate wajib diisi" });
   }
-  setReminders(userId, remindersByDate);
+  await setReminders(userId, remindersByDate);
   res.json({ ok: true });
 });
 
-app.get("/api/reminders/:userId", (req, res) => {
-  res.json({ remindersByDate: getReminders(req.params.userId) });
+app.get("/api/reminders/:userId", async (req, res) => {
+  res.json({ remindersByDate: await getReminders(req.params.userId) });
 });
 
 // Dipanggil saat pengguna menekan "Selesai" di notifikasi atau di dalam app
 // — menghentikan pengiriman ulang alarm untuk reminder tsb.
-app.post("/api/reminders/ack", (req, res) => {
+app.post("/api/reminders/ack", async (req, res) => {
   const { userId, reminderId } = req.body || {};
   if (!userId || !reminderId) return res.status(400).json({ error: "userId dan reminderId wajib diisi" });
-  markAck(userId, reminderId);
+  await markAck(userId, reminderId);
   res.json({ ok: true });
 });
 
 // ---------- Pengiriman push ----------
 
 async function sendPushToUser(userId, payload) {
-  const subs = getSubscriptions(userId);
+  const subs = await getSubscriptions(userId);
   await Promise.all(
     subs.map(async (sub) => {
       try {
@@ -151,7 +153,7 @@ async function sendPushToUser(userId, payload) {
       } catch (err) {
         // 410/404 = subscription sudah tidak valid (mis. user uninstall PWA) -> bersihkan
         if (err.statusCode === 410 || err.statusCode === 404) {
-          removeSubscription(userId, sub.endpoint);
+          await removeSubscription(userId, sub.endpoint);
         } else {
           console.error(`Push gagal untuk user ${userId}:`, err.message);
         }
@@ -163,7 +165,7 @@ async function sendPushToUser(userId, payload) {
 // Loop utama: jalan tiap menit, cek semua user, cari reminder yang jamnya
 // sudah lewat hari ini & belum "done", lalu kirim/kirim-ulang push.
 async function tickReminders() {
-  const allReminders = getAllReminders();
+  const allReminders = await getAllReminders();
   const currentTime = nowHHMM();
   const dateKey = todayKey();
 
@@ -173,13 +175,13 @@ async function tickReminders() {
       if (reminder.done) continue;
       if (reminder.time > currentTime) continue; // belum waktunya
 
-      const ack = getAckEntry(userId, reminder.id);
+      const ack = await getAckEntry(userId, reminder.id);
       if (ack?.ackedAt) continue; // sudah dimatikan pengguna
 
       const resendCount = ack?.resendCount || 0;
       if (resendCount === 0) {
         await sendPushToUser(userId, buildReminderPayload(reminder, dateKey));
-        bumpResendCount(userId, reminder.id);
+        await bumpResendCount(userId, reminder.id);
         continue;
       }
 
@@ -189,7 +191,7 @@ async function tickReminders() {
       const minutesSince = (Date.now() - lastSentAt) / 60000;
       if (minutesSince >= RESEND_INTERVAL_MINUTES) {
         await sendPushToUser(userId, buildReminderPayload(reminder, dateKey, true));
-        bumpResendCount(userId, reminder.id);
+        await bumpResendCount(userId, reminder.id);
       }
     }
   }
@@ -217,7 +219,14 @@ cron.schedule("* * * * *", () => {
   tickReminders().catch((err) => console.error("tickReminders error:", err));
 });
 
-app.listen(PORT, () => {
-  console.log(`BulkyApp push server jalan di http://localhost:${PORT}`);
-  if (!VAPID_PUBLIC_KEY) console.log("-> Jangan lupa generate & isi VAPID keys di server/.env");
-});
+initDb()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`BulkyApp push server jalan di http://localhost:${PORT}`);
+      if (!VAPID_PUBLIC_KEY) console.log("-> Jangan lupa generate & isi VAPID keys di server/.env");
+    });
+  })
+  .catch((err) => {
+    console.error("Gagal inisialisasi database:", err);
+    process.exit(1);
+  });
